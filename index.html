@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoalEdge</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0f1519;
+    --card: #141b22;
+    --border: #1e2a34;
+    --accent: #00e676;
+    --accent2: #ffab00;
+    --accent3: #ff4444;
+    --text: #e8f0f7;
+    --muted: #5a7a8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+      radial-gradient(ellipse at 60% 20%, rgba(0,230,118,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, rgba(255,171,0,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,12,16,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px;
+    background: linear-gradient(135deg, #00e676, #69f0ae);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .logo span {
+    background: linear-gradient(135deg, #ffab00, #ffd740);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 6px;
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.3s;
+  }
+
+  .status-badge.live {
+    background: rgba(255,68,68,0.1);
+    border: 1px solid rgba(255,68,68,0.3);
+    color: #ff4444;
+  }
+
+  .status-badge.demo {
+    background: rgba(255,171,0,0.1);
+    border: 1px solid rgba(255,171,0,0.3);
+    color: #ffab00;
+  }
+
+  .status-badge.loading {
+    background: rgba(0,230,118,0.1);
+    border: 1px solid rgba(0,230,118,0.3);
+    color: #00e676;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1; padding: 8px; text-align: center;
+    border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    color: var(--muted); letter-spacing: 0.5px;
+  }
+
+  .tab.active { background: var(--accent); color: #000; }
+
+  .summary-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px; margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 10px; text-align: center;
+  }
+
+  .summary-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; line-height: 1; margin-bottom: 4px;
+  }
+
+  .summary-lbl {
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* LOADING */
+  .loading-state {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    padding: 60px 20px; text-align: center;
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* MATCH CARDS */
+  .match-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px;
+    margin-bottom: 12px; cursor: pointer;
+    transition: all 0.25s; position: relative; overflow: hidden;
+    animation: slideIn 0.4s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .match-card:hover { border-color: rgba(0,230,118,0.3); transform: translateY(-1px); }
+
+  .match-card::before {
+    content: ''; position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 3px 0 0 3px;
+  }
+
+  .match-card.hot::before { background: #ff4444; }
+  .match-card.warm::before { background: #ffab00; }
+  .match-card.cold::before { background: #00e676; }
+
+  .match-top {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 12px;
+  }
+
+  .league-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    color: var(--muted); text-transform: uppercase;
+    background: var(--surface); padding: 3px 8px; border-radius: 6px;
+  }
+
+  .match-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .teams-row {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 14px;
+  }
+
+  .team { text-align: center; flex: 1; }
+  .team-name { font-weight: 600; font-size: 14px; line-height: 1.2; }
+
+  .team-form { display: flex; gap: 3px; justify-content: center; margin-top: 6px; }
+
+  .form-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .form-dot.w { background: #00e676; }
+  .form-dot.d { background: #ffab00; }
+  .form-dot.l { background: #ff4444; }
+
+  .vs { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--muted); padding: 0 10px; }
+
+  .score-section { background: var(--surface); border-radius: 10px; padding: 10px 12px; }
+
+  .score-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 8px;
+  }
+
+  .score-label {
+    font-size: 10px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .score-value { font-family: 'Bebas Neue', sans-serif; font-size: 22px; line-height: 1; }
+
+  .score-bar-bg {
+    height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden; margin-bottom: 8px;
+  }
+
+  .score-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .signals { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+  .signal-tag {
+    font-size: 10px; padding: 3px 8px;
+    border-radius: 6px; font-weight: 500; letter-spacing: 0.3px;
+  }
+
+  .signal-tag.over { background: rgba(0,230,118,0.1); color: #00e676; border: 1px solid rgba(0,230,118,0.2); }
+  .signal-tag.btts { background: rgba(255,171,0,0.1); color: #ffab00; border: 1px solid rgba(255,171,0,0.2); }
+  .signal-tag.warn { background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid rgba(255,68,68,0.2); }
+  .signal-tag.neu { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+
+  /* DEMO BANNER */
+  .demo-banner {
+    background: rgba(255,171,0,0.08);
+    border: 1px solid rgba(255,171,0,0.2);
+    border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 16px; font-size: 12px;
+    color: #ffab00; line-height: 1.5; display: none;
+  }
+
+  .demo-banner.show { display: block; }
+
+  /* PARLAY */
+  .parlay-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+
+  .parlay-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; margin-bottom: 4px; }
+  .parlay-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  .parlay-leg {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+
+  .parlay-leg:last-of-type { border-bottom: none; }
+  .leg-match { font-size: 13px; font-weight: 500; }
+  .leg-bet { font-size: 11px; color: var(--muted); }
+  .leg-odds { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: #ffab00; }
+
+  .parlay-footer {
+    background: var(--surface); border-radius: 10px; padding: 12px;
+    margin-top: 12px; display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .total-odds { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--accent); }
+
+  .confidence-pill {
+    padding: 6px 14px; border-radius: 20px;
+    font-weight: 600; font-size: 12px; letter-spacing: 0.5px;
+  }
+
+  .confidence-pill.high { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid rgba(0,230,118,0.3); }
+  .confidence-pill.med { background: rgba(255,171,0,0.15); color: #ffab00; border: 1px solid rgba(255,171,0,0.3); }
+
+  .disclaimer {
+    background: rgba(255,171,0,0.05);
+    border: 1px solid rgba(255,171,0,0.15);
+    border-radius: 10px; padding: 12px;
+    font-size: 11px; color: var(--muted);
+    line-height: 1.6; margin-top: 8px; margin-bottom: 20px;
+  }
+
+  .disclaimer strong { color: #ffab00; }
+
+  /* DETAIL SHEET */
+  .detail-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200; display: none;
+    backdrop-filter: blur(4px);
+  }
+
+  .detail-overlay.open { display: flex; align-items: flex-end; }
+
+  .detail-sheet {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-height: 80vh;
+    overflow-y: auto; padding: 20px;
+    animation: sheetUp 0.3s ease;
+  }
+
+  @keyframes sheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .sheet-handle {
+    width: 40px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto 20px;
+  }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+
+  .stat-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; text-align: center;
+  }
+
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 26px; line-height: 1; }
+  .stat-lbl { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-top: 3px; }
+
+  .close-btn {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; width: 100%;
+    color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Goal<span>Edge</span></div>
+  <div class="status-badge loading" id="status-badge">
+    <div class="status-dot"></div>
+    <span id="status-text">Loading</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('matches')">Match Scanner</div>
+    <div class="tab" onclick="switchTab('parlay')">Parlay Builder</div>
+    <div class="tab" onclick="switchTab('guide')">System</div>
+  </div>
+
+  <!-- MATCHES TAB -->
+  <div id="tab-matches">
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-val" id="hot-count" style="color:#ff4444">—</div>
+        <div class="summary-lbl">Hot Picks</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-val" id="total-count" style="color:#ffab00">—</div>
+        <div class="summary-lbl">Games Today</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-val" id="avg-score" style="color:var(--muted)">—</div>
+        <div class="summary-lbl">Avg Score</div>
+      </div>
+    </div>
+
+    <div class="demo-banner" id="demo-banner">
+      📡 <strong>Showing demo data.</strong> To see real live matches, complete the Vercel setup in the guide below.
+    </div>
+
+    <div class="section-label">Today's Matches</div>
+
+    <div id="match-list">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Scanning today's matches...</div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>⚠️ Important:</strong> GoalEdge is a statistical analysis tool for entertainment. No system guarantees profits. Bet responsibly and only what you can afford to lose.
+    </div>
+  </div>
+
+  <!-- PARLAY TAB -->
+  <div id="tab-parlay" class="hidden">
+    <div class="section-label">Suggested Parlays</div>
+    <div id="parlay-list">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Building parlays...</div>
+      </div>
+    </div>
+    <div class="disclaimer">
+      <strong>⚠️ Remember:</strong> Parlays multiply both risk and reward. The more legs, the lower the probability of winning.
+    </div>
+  </div>
+
+  <!-- GUIDE TAB -->
+  <div id="tab-guide" class="hidden">
+    <div class="section-label">Setup Guide</div>
+
+    <div class="parlay-card" style="margin-bottom:12px">
+      <div class="parlay-title" style="font-size:15px;color:#00e676">Step 1 — Get Your Free API Key</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:8px">
+        1. Go to <strong style="color:var(--text)">dashboard.api-football.com</strong><br>
+        2. Click <strong style="color:var(--text)">Sign Up</strong> — just email + password<br>
+        3. Copy your <strong style="color:#ffab00">API Key</strong> from the dashboard<br>
+        4. Free plan = 100 requests/day ✓
+      </div>
+    </div>
+
+    <div class="parlay-card" style="margin-bottom:12px">
+      <div class="parlay-title" style="font-size:15px;color:#ffab00">Step 2 — Deploy to Vercel (Free)</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:8px">
+        1. Go to <strong style="color:var(--text)">vercel.com</strong> → Sign up with GitHub<br>
+        2. Click <strong style="color:var(--text)">Add New Project</strong><br>
+        3. Upload the <strong style="color:#ffab00">goaledge folder</strong> you downloaded<br>
+        4. In <strong style="color:var(--text)">Environment Variables</strong> add:<br>
+        &nbsp;&nbsp;Name: <code style="color:#00e676;background:var(--surface);padding:2px 6px;border-radius:4px">FOOTBALL_API_KEY</code><br>
+        &nbsp;&nbsp;Value: <em>your key from Step 1</em><br>
+        5. Click <strong style="color:var(--text)">Deploy</strong> — done! ✓
+      </div>
+    </div>
+
+    <div class="parlay-card" style="margin-bottom:12px">
+      <div class="parlay-title" style="font-size:15px;color:var(--muted)">Step 3 — Connect the App</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:8px">
+        After deploying, Vercel gives you a URL like:<br>
+        <code style="color:#00e676;background:var(--surface);padding:2px 6px;border-radius:4px;display:inline-block;margin:6px 0">your-app.vercel.app</code><br>
+        The app will automatically fetch live data from that URL. That's it!
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">How Scoring Works</div>
+
+    <div class="parlay-card">
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span>Recent avg goals/game</span><span style="color:#00e676;font-family:'JetBrains Mono'">30pts</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span>H2H history (goals)</span><span style="color:#00e676;font-family:'JetBrains Mono'">25pts</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span>Both teams scoring rate</span><span style="color:#00e676;font-family:'JetBrains Mono'">20pts</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)"><span>Defensive weakness</span><span style="color:#00e676;font-family:'JetBrains Mono'">15pts</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0"><span>Form momentum</span><span style="color:#00e676;font-family:'JetBrains Mono'">10pts</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-sheet">
+    <div class="sheet-handle"></div>
+    <div id="detail-content"></div>
+    <button class="close-btn" onclick="closeDetail()">Close</button>
+  </div>
+</div>
+
+<script>
+let allMatches = [];
+
+// ─── FETCH MATCHES ───────────────────────────────────────────────
+async function loadMatches() {
+  try {
+    // In production this hits your Vercel backend
+    // In demo mode (no backend) it uses hardcoded data
+    const response = await fetch('/api/matches');
+    const data = await response.json();
+    handleMatchData(data);
+  } catch (err) {
+    // No backend yet — use demo data
+    handleMatchData({ matches: getDemoMatches(), demo: true });
+  }
+}
+
+function handleMatchData({ matches, demo }) {
+  allMatches = matches;
+
+  // Update status badge
+  const badge = document.getElementById('status-badge');
+  const statusText = document.getElementById('status-text');
+  if (demo) {
+    badge.className = 'status-badge demo';
+    statusText.textContent = 'Demo';
+    document.getElementById('demo-banner').classList.add('show');
+  } else {
+    badge.className = 'status-badge live';
+    statusText.textContent = 'Live';
+  }
+
+  // Update summary
+  const hotPicks = matches.filter(m => m.score >= 70).length;
+  const avgScore = Math.round(matches.reduce((s, m) => s + m.score, 0) / matches.length);
+  document.getElementById('hot-count').textContent = hotPicks;
+  document.getElementById('total-count').textContent = matches.length;
+  document.getElementById('avg-score').textContent = avgScore + '%';
+
+  renderMatches(matches);
+  renderParlays(matches);
+}
+
+// ─── RENDER MATCHES ───────────────────────────────────────────────
+function renderMatches(matches) {
+  const sorted = [...matches].sort((a, b) => b.score - a.score);
+  document.getElementById('match-list').innerHTML = sorted.map((m, i) => `
+    <div class="match-card ${getCardClass(m.score)}" style="animation-delay:${i * 0.06}s" onclick="openDetail(${matches.indexOf(m)})">
+      <div class="match-top">
+        <div class="league-tag">${m.league}</div>
+        <div class="match-time">${m.time}</div>
+      </div>
+      <div class="teams-row">
+        <div class="team">
+          <div class="team-name">${m.home}</div>
+          <div class="team-form">${(m.homeForm || ['w','d','w','l','w']).map(f => `<div class="form-dot ${f}"></div>`).join('')}</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team">
+          <div class="team-name">${m.away}</div>
+          <div class="team-form">${(m.awayForm || ['w','l','d','w','w']).map(f => `<div class="form-dot ${f}"></div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="score-section">
+        <div class="score-header">
+          <div class="score-label">Goal Score</div>
+          <div class="score-value" style="color:${getScoreColor(m.score)}">${m.score}</div>
+        </div>
+        <div class="score-bar-bg">
+          <div class="score-bar-fill" style="width:${m.score}%;background:${getBarColor(m.score)}"></div>
+        </div>
+        <div class="signals">${signalHtml(m.signals)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── RENDER PARLAYS ───────────────────────────────────────────────
+function renderParlays(matches) {
+  const hot = [...matches].sort((a, b) => b.score - a.score).slice(0, 5);
+
+  const leg3 = hot.slice(0, 3);
+  const leg2 = hot.slice(1, 3);
+
+  const odds3 = leg3.map(() => (1.6 + Math.random() * 0.4).toFixed(2));
+  const odds2 = leg2.map(() => (1.7 + Math.random() * 0.35).toFixed(2));
+
+  const combined3 = (odds3.reduce((a, b) => a * b, 1)).toFixed(2);
+  const combined2 = (odds2.reduce((a, b) => a * b, 1)).toFixed(2);
+
+  document.getElementById('parlay-list').innerHTML = `
+    <div class="parlay-card">
+      <div class="parlay-title">🔥 High Value 3-Leg</div>
+      <div class="parlay-sub">Top 3 goal scores today</div>
+      ${leg3.map((m, i) => `
+        <div class="parlay-leg">
+          <div>
+            <div class="leg-match">${m.home} vs ${m.away}</div>
+            <div class="leg-bet">${m.signals.includes('btts') ? 'BTTS' : 'Over 2.5 Goals'}</div>
+          </div>
+          <div class="leg-odds">${odds3[i]}</div>
+        </div>
+      `).join('')}
+      <div class="parlay-footer">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Combined Odds</div>
+          <div class="total-odds">${combined3}x</div>
+        </div>
+        <div class="confidence-pill high">HIGH CONF</div>
+      </div>
+    </div>
+
+    <div class="parlay-card">
+      <div class="parlay-title">⚡ Safe 2-Leg</div>
+      <div class="parlay-sub">Lower risk, steady return</div>
+      ${leg2.map((m, i) => `
+        <div class="parlay-leg">
+          <div>
+            <div class="leg-match">${m.home} vs ${m.away}</div>
+            <div class="leg-bet">Over 2.5 Goals</div>
+          </div>
+          <div class="leg-odds">${odds2[i]}</div>
+        </div>
+      `).join('')}
+      <div class="parlay-footer">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Combined Odds</div>
+          <div class="total-odds">${combined2}x</div>
+        </div>
+        <div class="confidence-pill med">MED CONF</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── DETAIL PANEL ─────────────────────────────────────────────────
+function openDetail(i) {
+  const m = allMatches[i];
+  document.getElementById('detail-content').innerHTML = `
+    <div style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:4px">${m.home} vs ${m.away}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">${m.league} · ${m.time}</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-family:'JetBrains Mono'">Goal Score</div>
+        <div style="font-family:'Bebas Neue';font-size:48px;line-height:1;color:${getScoreColor(m.score)}">${m.score}</div>
+      </div>
+      <div class="signals">${signalHtml(m.signals)}</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-item"><div class="stat-num" style="color:#00e676">${m.stats.homeAvg}</div><div class="stat-lbl">Home Avg Goals</div></div>
+      <div class="stat-item"><div class="stat-num" style="color:#00e676">${m.stats.awayAvg}</div><div class="stat-lbl">Away Avg Goals</div></div>
+      <div class="stat-item"><div class="stat-num" style="color:#ffab00">${m.stats.h2hGoals}</div><div class="stat-lbl">H2H Avg Goals</div></div>
+      <div class="stat-item"><div class="stat-num" style="color:#ffab00">${m.stats.bttsRate}</div><div class="stat-lbl">BTTS Rate</div></div>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail(e) {
+  if (!e || e.target === document.getElementById('detail-overlay')) {
+    document.getElementById('detail-overlay').classList.remove('open');
+  }
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────
+function switchTab(tab) {
+  ['matches', 'parlay', 'guide'].forEach((t, i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t === tab);
+    document.getElementById(`tab-${t === 'parlay' ? 'parlay' : t === 'guide' ? 'guide' : 'matches'}`).classList.toggle('hidden',
+      t !== tab);
+  });
+}
+
+// Fix tab IDs
+document.getElementById('tab-parlay') && null;
+function switchTab(tab) {
+  const tabs = ['matches', 'parlay', 'guide'];
+  const ids = ['tab-matches', 'tab-parlay', 'tab-guide'];
+  tabs.forEach((t, i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t === tab);
+    document.getElementById(ids[i]).classList.toggle('hidden', t !== tab);
+  });
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────
+function getCardClass(s) { return s >= 70 ? 'hot' : s >= 40 ? 'warm' : 'cold'; }
+function getScoreColor(s) { return s >= 70 ? '#ff4444' : s >= 40 ? '#ffab00' : '#00e676'; }
+function getBarColor(s) { return s >= 70 ? '#ff4444' : s >= 40 ? '#ffab00' : '#00e676'; }
+
+function signalHtml(tags) {
+  const labels = { over: 'Over 2.5 ✓', btts: 'BTTS ✓', warn: 'Defensive ⚠', neu: 'Low Scoring' };
+  return tags.map(t => `<span class="signal-tag ${t}">${labels[t] || t}</span>`).join('');
+}
+
+function getDemoMatches() {
+  return [
+    { league:"Premier League", home:"Man City", away:"Arsenal", time:"15:00", score:87, signals:["over","btts"], stats:{homeAvg:2.8,awayAvg:2.4,h2hGoals:"4.1",bttsRate:"73%"}, homeForm:["w","w","d","w","w"], awayForm:["w","w","w","l","w"] },
+    { league:"Premier League", home:"Liverpool", away:"Chelsea", time:"17:30", score:79, signals:["over","btts"], stats:{homeAvg:3.1,awayAvg:2.0,h2hGoals:"3.6",bttsRate:"68%"}, homeForm:["w","w","w","w","d"], awayForm:["d","w","l","w","w"] },
+    { league:"La Liga", home:"Real Madrid", away:"Atletico", time:"20:00", score:71, signals:["over","warn"], stats:{homeAvg:2.6,awayAvg:1.4,h2hGoals:"2.8",bttsRate:"55%"}, homeForm:["w","w","w","d","w"], awayForm:["w","d","w","w","d"] },
+    { league:"Bundesliga", home:"Dortmund", away:"Leipzig", time:"18:30", score:82, signals:["over","btts"], stats:{homeAvg:2.9,awayAvg:2.5,h2hGoals:"4.3",bttsRate:"78%"}, homeForm:["w","l","w","w","w"], awayForm:["w","w","d","w","l"] },
+    { league:"Ligue 1", home:"PSG", away:"Marseille", time:"21:00", score:76, signals:["over","btts"], stats:{homeAvg:3.4,awayAvg:1.8,h2hGoals:"3.9",bttsRate:"64%"}, homeForm:["w","w","w","w","w"], awayForm:["l","w","d","w","l"] },
+    { league:"Champions League", home:"Bayern", away:"Barcelona", time:"21:00", score:91, signals:["over","btts"], stats:{homeAvg:3.2,awayAvg:2.9,h2hGoals:"5.1",bttsRate:"82%"}, homeForm:["w","w","w","w","l"], awayForm:["w","w","w","d","w"] }
+  ];
+}
+
+// Start loading
+loadMatches();
+</script>
+</body>
+</html>
